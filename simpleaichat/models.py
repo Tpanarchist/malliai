@@ -17,7 +17,7 @@ def now_tz():
     return datetime.datetime.now(datetime.timezone.utc)
 
 
-class ChatMessage(BaseModel):
+class Message(BaseModel):
     role: str
     content: str
     name: Optional[str] = None
@@ -32,7 +32,7 @@ class ChatMessage(BaseModel):
         return str(self.model_dump(exclude_none=True))
 
 
-class ChatSession(BaseModel):
+class Session(BaseModel):
     id: Union[str, UUID] = Field(default_factory=uuid4)
     created_at: datetime.datetime = Field(default_factory=now_tz)
     auth: Dict[str, SecretStr]
@@ -40,7 +40,7 @@ class ChatSession(BaseModel):
     model: str
     system: str
     params: Dict[str, Any] = {}
-    messages: List[ChatMessage] = []
+    messages: List[Message] = []
     input_fields: Set[str] = {}
     recent_messages: Optional[int] = None
     save_messages: Optional[bool] = True
@@ -57,7 +57,7 @@ class ChatSession(BaseModel):
         - Last message sent at {last_message_str}"""
 
     def format_input_messages(
-        self, system_message: ChatMessage, user_message: ChatMessage
+        self, system_message: Message, user_message: Message
     ) -> list:
         recent_messages = (
             self.messages[-self.recent_messages :]
@@ -75,8 +75,8 @@ class ChatSession(BaseModel):
 
     def add_messages(
         self,
-        user_message: ChatMessage,
-        assistant_message: ChatMessage,
+        user_message: Message,
+        assistant_message: Message,
         save_messages: bool = None,
     ) -> None:
         # if save_messages is explicitly defined, always use that choice
