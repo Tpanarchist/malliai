@@ -1,1 +1,1 @@
-from .simpleaichat import AIChat, AsyncAIChat
+from .agent import Agent, AsyncAgent
