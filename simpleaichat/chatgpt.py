@@ -4,7 +4,7 @@ import orjson
 from httpx import AsyncClient, Client
 from pydantic import HttpUrl
 
-from .models import ChatMessage, ChatSession
+from .models import Message, Session
 from .utils import remove_a_key
 
 tool_prompt = """From the list of tools below:
@@ -14,7 +14,7 @@ tool_prompt = """From the list of tools below:
 {tools}"""
 
 
-class ChatGPTSession(ChatSession):
+class GPTSession(Session):
     api_url: HttpUrl = "https://api.openai.com/v1/chat/completions"
     input_fields: Set[str] = {"role", "content", "name"}
     system: str = "You are a helpful assistant."
@@ -35,14 +35,14 @@ class ChatGPTSession(ChatSession):
             "Authorization": f"Bearer {self.auth['api_key'].get_secret_value()}",
         }
 
-        system_message = ChatMessage(role="system", content=system or self.system)
+        system_message = Message(role="system", content=system or self.system)
         if not input_schema:
-            user_message = ChatMessage(role="user", content=prompt)
+            user_message = Message(role="user", content=prompt)
         else:
             assert isinstance(
                 prompt, input_schema
             ), f"prompt must be an instance of {input_schema.__name__}"
-            user_message = ChatMessage(
+            user_message = Message(
                 role="function",
                 content=prompt.model_dump_json(),
                 name=input_schema.__name__,
@@ -112,7 +112,7 @@ class ChatGPTSession(ChatSession):
         try:
             if not output_schema:
                 content = r["choices"][0]["message"]["content"]
-                assistant_message = ChatMessage(
+                assistant_message = Message(
                     role=r["choices"][0]["message"]["role"],
                     content=content,
                     finish_reason=r["choices"][0]["finish_reason"],
@@ -165,7 +165,7 @@ class ChatGPTSession(ChatSession):
                             yield {"delta": delta, "response": "".join(content)}
 
         # streaming does not currently return token counts
-        assistant_message = ChatMessage(
+        assistant_message = Message(
             role="assistant",
             content="".join(content),
         )
@@ -236,8 +236,8 @@ class ChatGPTSession(ChatSession):
         )
 
         # manually append the nonmodified user message + normal AI response
-        user_message = ChatMessage(role="user", content=prompt)
-        assistant_message = ChatMessage(
+        user_message = Message(role="user", content=prompt)
+        assistant_message = Message(
             role="assistant", content=context_dict["response"]
         )
         self.add_messages(user_message, assistant_message, save_messages)
@@ -269,7 +269,7 @@ class ChatGPTSession(ChatSession):
         try:
             if not output_schema:
                 content = r["choices"][0]["message"]["content"]
-                assistant_message = ChatMessage(
+                assistant_message = Message(
                     role=r["choices"][0]["message"]["role"],
                     content=content,
                     finish_reason=r["choices"][0]["finish_reason"],
@@ -322,7 +322,7 @@ class ChatGPTSession(ChatSession):
                             yield {"delta": delta, "response": "".join(content)}
 
         # streaming does not currently return token counts
-        assistant_message = ChatMessage(
+        assistant_message = Message(
             role="assistant",
             content="".join(content),
         )
@@ -391,8 +391,8 @@ class ChatGPTSession(ChatSession):
         )
 
         # manually append the nonmodified user message + normal AI response
-        user_message = ChatMessage(role="user", content=prompt)
-        assistant_message = ChatMessage(
+        user_message = Message(role="user", content=prompt)
+        assistant_message = Message(
             role="assistant", content=context_dict["response"]
         )
         self.add_messages(user_message, assistant_message, save_messages)
