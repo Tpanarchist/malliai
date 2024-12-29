@@ -12,17 +12,17 @@ from httpx import AsyncClient, Client
 from pydantic import BaseModel
 from rich.console import Console
 
-from .chatgpt import ChatGPTSession
-from .models import ChatMessage, ChatSession
+from .chatgpt import GPTSession
+from .models import Message, Session
 from .utils import wikipedia_search_lookup
 
 load_dotenv()
 
 
-class AIChat(BaseModel):
+class Agent(BaseModel):
     client: Any
-    default_session: Optional[ChatSession]
-    sessions: Dict[Union[str, UUID], ChatSession] = {}
+    default_session: Optional[Session]
+    sessions: Dict[Union[str, UUID], Session] = {}
 
     def __init__(
         self,
@@ -61,14 +61,14 @@ class AIChat(BaseModel):
         self,
         return_session: bool = False,
         **kwargs,
-    ) -> Optional[ChatGPTSession]:
+    ) -> Optional[GPTSession]:
         if "model" not in kwargs:  # set default
             kwargs["model"] = "gpt-3.5-turbo"
         # TODO: Add support for more models (PaLM, Claude)
         if "gpt-" in kwargs["model"]:
             gpt_api_key = kwargs.get("api_key") or os.getenv("OPENAI_API_KEY")
             assert gpt_api_key, f"An API key for {kwargs['model'] } was not defined."
-            sess = ChatGPTSession(
+            sess = GPTSession(
                 auth={
                     "api_key": gpt_api_key,
                 },
@@ -80,7 +80,7 @@ class AIChat(BaseModel):
         else:
             self.sessions[sess.id] = sess
 
-    def get_session(self, id: Union[str, UUID] = None) -> ChatSession:
+    def get_session(self, id: Union[str, UUID] = None) -> Session:
         try:
             sess = self.sessions[id] if id else self.default_session
         except KeyError:
@@ -288,7 +288,7 @@ class AIChat(BaseModel):
                     )
                     # https://stackoverflow.com/a/68305271
                     row = {k: (None if v == "" else v) for k, v in row.items()}
-                    messages.append(ChatMessage(**row))
+                    messages.append(Message(**row))
 
             self.new_session(id=id, **kwargs)
             self.sessions[id].messages = messages
@@ -324,7 +324,7 @@ class AIChat(BaseModel):
         return self.total_length(id)
 
 
-class AsyncAIChat(AIChat):
+class AsyncAgent(Agent):
     async def __call__(
         self,
         prompt: str,
